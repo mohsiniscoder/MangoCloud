@@ -1,0 +1,45 @@
+services:
+  # ----------------------------------------
+  # DATABASE: MongoDB
+  # ----------------------------------------
+  private-cloud-db:
+    image: mongo:latest
+    container_name: mango-mongo
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "7020:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mango-network
+
+  # ----------------------------------------
+  # STORAGE: MinIO (S3 Compatible)
+  # ----------------------------------------
+  private-cloud-storage:
+    image: quay.io/minio/minio:latest
+    container_name: mango-minio
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"   # API Port (How Node.js talks to it)
+      - "9001:9001"   # Web Console Port (How you view files in browser)
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - mango-network
+
+# ----------------------------------------
+# ARCHITECTURE MECHANISMS
+# ----------------------------------------
+networks:
+  mango-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  minio-data:
