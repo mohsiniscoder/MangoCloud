@@ -20,21 +20,30 @@ mongoose.connect(process.env.MONGO_URI as string)
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // ----------------------------------------
-// 2. Establish MinIO Storage Connection
+// 2A. The Internal Inspector (Real Docker Network Traffic)
 // ----------------------------------------
 const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT as string,
+  endPoint: process.env.MINIO_ENDPOINT as string, // 'private-cloud-storage'
   port: parseInt(process.env.MINIO_PORT as string, 10),
   useSSL: false,
   accessKey: process.env.MINIO_ACCESS_KEY as string,
   secretKey: process.env.MINIO_SECRET_KEY as string
 });
 
-// Verify MinIO connection on startup by listing all available buckets
 minioClient.listBuckets()
   .then(buckets => console.log('✅ MinIO Engine Connected. Active Buckets:', buckets.map(b => b.name)))
   .catch(err => console.error('❌ MinIO Connection Error:', err));
 
+// ----------------------------------------
+// 2B. The Public Ticket Agent (Offline Crypto Math Only)
+// ----------------------------------------
+const minioPublicClient = new Minio.Client({
+  endPoint: process.env.MINIO_PUBLIC_ENDPOINT as string, // 'localhost' or '192.168.1.XX'
+  port: parseInt(process.env.MINIO_PORT as string, 10),
+  useSSL: false,
+  accessKey: process.env.MINIO_ACCESS_KEY as string,
+  secretKey: process.env.MINIO_SECRET_KEY as string
+});
 // ----------------------------------------
 // 3. Health Check Endpoint
 // ----------------------------------------
@@ -63,7 +72,7 @@ app.post('/api/upload/init', async (req, res) => {
 
     // 3. Ask MinIO for the VIP Pass (Pre-signed PUT URL) valid for 60 seconds
     const bucketName = 'hello-bucket'; 
-    const presignedUrl = await minioClient.presignedPutObject(
+    const presignedUrl = await minioPublicClient.presignedPutObject(
       bucketName, 
       storageName, 
       60 
