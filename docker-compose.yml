@@ -32,7 +32,22 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - mango-network
-
+# ----------------------------------------
+  # GATEKEEPER: Node.js API Server
+  # ----------------------------------------
+  mango-api:
+    build: ./mango-cloud-api
+    container_name: mango-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000" # Exposes the API to your local machine & LAN
+    env_file:
+      - .env # Automatically injects MONGO_URI, MINIO_ENDPOINT, etc. into process.env
+    networks:
+      - mango-network
+    depends_on:
+      - private-cloud-db
+      - private-cloud-storage
 # ----------------------------------------
 # ARCHITECTURE MECHANISMS
 # ----------------------------------------
