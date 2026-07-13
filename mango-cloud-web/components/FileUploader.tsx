@@ -46,10 +46,21 @@ export default function FileUploader() {
         }
       };
 
-      xhr.onload = () => {
+      xhr.onload = async () => {
         if (xhr.status === 200) {
-          setStatus("success");
-          console.log(`File stored. Ledger ID: ${fileId}`);
+          // --- NEW: Phase 3 - Confirm with the Gatekeeper ---
+          try {
+            await fetch(`${apiUrl}/api/upload/confirm`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileId }),
+            });
+            setStatus("success");
+            console.log(`File successfully stored and activated. Ledger ID: ${fileId}`);
+          } catch (confirmError) {
+            console.error("Failed to confirm with ledger", confirmError);
+            setStatus("error");
+          }
         } else {
           setStatus("error");
         }
@@ -65,10 +76,10 @@ export default function FileUploader() {
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-800">
+    <div className="w-full max-w-md p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-800">    
       <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-zinc-50">Upload to Mango Cloud</h2>
-      
-      <div 
+
+      <div
         onClick={() => fileInputRef.current?.click()}
         className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-orange-500 transition-colors"
       >
@@ -90,7 +101,7 @@ export default function FileUploader() {
             <span className="capitalize">Status: {status}</span>
             {status === "uploading" && <span>{progress}%</span>}
           </div>
-          
+
           {status === "uploading" && (
             <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
               <div className="bg-orange-600 h-full transition-all duration-150" style={{ width: `${progress}%` }} />

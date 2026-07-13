@@ -90,6 +90,71 @@ app.post('/api/upload/init', async (req, res) => {
     res.status(500).json({ error: 'Failed to initialize upload' });
   }
 });
+// ----------------------------------------
+// 5. Upload Confirmation (Two-Phase Commit)
+// ----------------------------------------
+app.post('/api/upload/confirm', async (req, res) => {
+  try {
+    const { fileId } = req.body;
+    
+    // Find the pending file in the ledger
+    const file = await FileModel.findById(fileId);
+    if (!file) {
+      return res.status(404).json({ error: 'File ledger entry not found' });
+    }
+
+    // Optional but recommended: Ask the Internal Inspector if the file actually exists in MinIO
+    // await minioClient.statObject('hello-bucket', file.storageName);
+
+    // Update status to ACTIVE
+    // CORRECT
+    file.uploadStatus = 'COMPLETED';
+    await file.save();
+
+    res.json({ message: 'File successfully committed to cloud ledger', file });
+  } catch (error) {
+    console.error('Confirmation Error:', error);
+    res.status(500).json({ error: 'Failed to confirm upload' });
+  }
+});
+
+// ----------------------------------------
+// 6. Fetch File Ledger (The Dashboard Data)
+// ----------------------------------------
+app.get('/api/files', async (req, res) => {
+  try {
+    // Only return files that successfully finished uploading, newest first
+    const files = await FileModel.find({ status: 'ACTIVE' }).sort({ createdAt: -1 });
+    res.json(files);
+  } catch (error) {
+    console.error('Fetch Files Error:', error);
+    res.status(500).json({ error: 'Failed to fetch ledger' });
+  }
+});
+
+// ----------------------------------------
+// 7. Generate Download Ticket (Pre-signed GET)
+// ----------------------------------------
+app.get('/api/files/:id/download', async (req, res) => {
+  try {
+    const file = await FileModel.findById(req.params.id);
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Ask the Public Ticket Agent for a 5-minute download link
+    const downloadUrl = await minioPublicClient.presignedGetObject(
+      'hello-bucket',
+      file.storageName,
+      5 * 60 // 5 minutes in seconds
+    );
+
+    res.json({ downloadUrl });
+  } catch (error) {
+    console.error('Download Ticket Error:', error);
+    res.status(500).json({ error: 'Failed to generate download ticket' });
+  }
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
