@@ -124,7 +124,7 @@ app.post('/api/upload/confirm', async (req, res) => {
 app.get('/api/files', async (req, res) => {
   try {
     // Only return files that successfully finished uploading, newest first
-    const files = await FileModel.find({ status: 'ACTIVE' }).sort({ createdAt: -1 });
+    const files = await FileModel.find({ status: 'COMPLETED' }).sort({ createdAt: -1 });
     res.json(files);
   } catch (error) {
     console.error('Fetch Files Error:', error);
