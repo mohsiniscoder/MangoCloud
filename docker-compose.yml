@@ -24,6 +24,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - MINIO_API_CORS_ALLOW_ORIGIN=${MINIO_API_CORS_ALLOW_ORIGIN} 
     ports:
       - "9000:9000"   # API Port (How Node.js talks to it)
       - "9001:9001"   # Web Console Port (How you view files in browser)
